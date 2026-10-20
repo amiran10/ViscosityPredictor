@@ -1,153 +1,211 @@
-# Gas Viscosity Prediction Using Gradient Boosting Regression
+# Gas Viscosity Predictor
+
+A machine learning application for predicting gas viscosity from thermodynamic and compositional input features using a Gradient Boosting Regressor (GBR).
 
 ## Overview
-This project implements a machine learning web application for predicting gas viscosity using a Gradient Boosting Regressor (GBR) developed with `scikit-learn`. The model learns nonlinear relationships between eight input variables and gas viscosity, providing highly accurate predictions through a Flask-based web application.
-The application supports both a web interface and a JSON-based prediction endpoint. It attempts to load the model from a JSON representation first and falls back to a `model.pkl` file using `joblib` if necessary.
 
-## Model Performance
-The Gradient Boosting Regressor achieved the highest predictive accuracy among the four evaluated models on the test dataset.
-| Evaluation metric | Test result |
-|---|---:|
-| Coefficient of determination (R²) | 0.999830 |
-| Root Mean Squared Error (RMSE) | 0.000087 cP |
-| Mean Absolute Error (MAE) | 0.000057 cP |
-The predicted values closely follow the ideal relationship between actual and predicted viscosity, indicating that the model captures the nonlinear patterns present in the evaluated dataset.
+This project implements a lightweight web application that accepts gas property inputs and returns a predicted viscosity value. The model is trained using the `sklearn.ensemble.GradientBoostingRegressor` approach and is designed to estimate viscosity with high accuracy based on a set of physical and compositional characteristics.
 
-**Note:** These results represent performance on the reported test set. They do not guarantee equivalent accuracy for unseen data outside the training distribution.
+The project is intended as a practical demonstration of:
+- regression modeling in Python
+- model deployment with Flask
+- API-based inference
+- simple front-end interaction
 
-## Input Features
-The model requires eight input features to produce a prediction.
-| No. | Feature | Unit |
-|---:|---|---|
-| 1 | Pressure | MPa |
-| 2 | Temperature | K |
-| 3 | Gas density | kg/m³ |
-| 4 | Gas thermal conductivity | W/(m·K) |
-| 5 | Gas specific heat capacity | J/(kg·K) |
-| 6 | Gas enthalpy | J/kg |
-| 7 | Gas entropy | J/(kg·K) |
-| 8 | Hydrogen (H₂) concentration | % |
-For the most reliable predictions, enter all eight features using the same units, conventions, and value ranges used during model training.
+## Project Goal
 
-### Hydrogen concentration
-Hydrogen concentration must be provided as a **whole-number percentage**, not a decimal fraction.
-Examples:
-- 10% H₂ → `10`
-- 30% H₂ → `30`
-- 50% H₂ → `50`
-- 70% H₂ → `70`
-- 90% H₂ → `90`
-Entering `0.9` instead of `90` for a hydrogen concentration of 90% can result in incorrect predictions because the model's preprocessing expects percentage values.
+Predict gas viscosity from parameters such as:
+- pressure
+- temperature
+- gas density
+- thermal conductivity
+- heat capacity
+- enthalpy
+- entropy
+- hydrogen composition
 
-## Missing Input Values
-The application uses median values calculated from the training dataset to replace zero-valued inputs during processing.
-Although this mechanism provides a fallback for incomplete input data, replacing actual measurements with median approximations removes information and may reduce prediction accuracy.
+## Model Summary
 
-**Recommendation:** Supply all eight measured or calculated input features whenever possible. The median replacement mechanism should not be treated as a substitute for accurate measurements.
+The Gradient Boosting Regressor was selected because it achieved the best predictive performance among the tested models. The system uses a trained model and a standardization step to convert the raw input values before prediction.
 
-## Project Structure
-The exact structure depends on the files included in the repository. A typical layout is:
+Representative reported performance:
+- R² ≈ 0.99983
+- RMSE and MAE depend on the training dataset used
+
+## Features Used
+
+The model expects the following input vector:
+
+1. Pressure (Mpa)
+2. Temperature (K)
+3. Gas Density (Kg/M3)
+4. Gas thermal conductivity (W/m.K)
+5. Gas thermal capacity (J/kg.K)
+6. Gas enthalpy (J/kg)
+7. Gas entropy (J/kg.K)
+8. H2 Composition
+
+## Repository Structure
+
 ```text
-gas-viscosity-prediction/
-├── app.py              # Flask application
-├── model.pkl            # Serialized trained model
-├── model.json           # JSON model representation, if supported
-├── templates/
-│   └── index.html       # Web interface
-├── static/              # CSS, JavaScript, and other assets
-├── requirements.txt     # Python dependencies
-└── README.md            # Project documentation
+ViscosityPredictor/
+├── main.py                 # Flask API and model loading logic
+├── viscosity_predictor.html  # Front-end UI
+├── model.pkl               # Optional trained model file (not committed)
+├── model.json              # Optional trained model bundle (not committed)
+├── requirements.txt        # Python dependencies
+├── .gitignore              # Ignore local environment and model artifacts
+├── README.md               # Project documentation
+└── .venv/                  # Local virtual environment (ignored)
 ```
 
-## Installation
+## Tech Stack
+
+- Python
+- Flask
+- NumPy
+- scikit-learn
+- joblib
+- HTML / JavaScript
+
+## Setup
 
 ### 1. Clone the repository
+
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd <YOUR_REPOSITORY_DIRECTORY>
+git clone https://github.com/Amiran10/ViscosityPredictor.git
+cd ViscosityPredictor
 ```
-Replace the placeholders with your actual repository URL and directory name.
 
 ### 2. Create a virtual environment
+
 ```bash
 python -m venv .venv
-```
-
-Activate it on Windows:
-```bash
-.venv\Scripts\activate
-```
-
-On Linux or macOS:
-```bash
-source .venv/bin/activate
+source .venv/bin/activate   # Linux/macOS
+# .venv\Scripts\activate    # Windows
 ```
 
 ### 3. Install dependencies
-If a `requirements.txt` file is available:
+
 ```bash
 pip install -r requirements.txt
 ```
-Otherwise, install the principal packages:
+
+### 4. Add model files
+
+Place one of the trained model files in the project root:
+- `model.pkl`
+- or `model.json`
+
+Also ensure the frontend file is present:
+- `viscosity_predictor.html`
+
+> These files are typically generated during model training and may be excluded from Git based on your `.gitignore` settings.
+
+## Run the App
+
 ```bash
-pip install flask scikit-learn joblib
-```
-Use the package versions compatible with the trained model and the application's implementation.
-
-### 4. Run the application
-If the Flask application is defined in `app.py`:
-```bash
-python app.py
-```
-Open the local address displayed in the terminal to access the web interface.
-
-## Prediction API
-The application provides a `POST /predict` endpoint that accepts JSON containing the eight model input features.
-
-### Example request
-```http
-POST /predict
-Content-Type: application/json
+python main.py
 ```
 
-Example JSON payload:
+Then open:
+
+```text
+http://localhost:8081
+```
+
+## API Endpoints
+
+### GET `/info`
+
+Returns metadata about the loaded model and feature statistics.
+
+Example response:
+
 ```json
 {
-  "pressure": 10.0,
-  "temperature": 300.0,
-  "gas_density": 5.0,
-  "thermal_conductivity": 0.03,
-  "specific_heat_capacity": 1000.0,
-  "enthalpy": 300000.0,
-  "entropy": 1000.0,
-  "h2_concentration": 50
+  "n_estimators": 100,
+  "r2": 0.99983,
+  "rmse": 0.1234,
+  "medians": {
+    "density": 123.45,
+    "conductivity": 0.123456,
+    "capacity": 1234.5,
+    "enthalpy": 24500,
+    "entropy": 456.7
+  }
 }
 ```
 
-**Important:** The values above illustrate the expected JSON structure only. They are not a validated physical operating point, and the feature names must match those implemented in `app.py`.
+### POST `/predict`
 
-### Example using curl
-```bash
-curl -X POST http://127.0.0.1:5000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "pressure": 10.0,
-    "temperature": 300.0,
-    "gas_density": 5.0,
-    "thermal_conductivity": 0.03,
-    "specific_heat_capacity": 1000.0,
-    "enthalpy": 300000.0,
-    "entropy": 1000.0,
-    "h2_concentration": 50
-  }'
+Sends a JSON payload with the feature vector:
+
+```json
+{
+  "features": [
+    10.5,
+    350.0,
+    85.2,
+    0.032,
+    1350.0,
+    22000.0,
+    410.0,
+    0.12
+  ]
+}
 ```
-The endpoint returns a JSON response containing the predicted gas viscosity, rounded to eight decimal places. The precise response structure depends on the implementation in `app.py`.
 
-## Intellectual Property and Usage
-Copyright © 2026. All rights reserved by the project owner.
-Unless a separate licence or written permission states otherwise, no permission is granted to reproduce, redistribute, modify, or commercially exploit this project's original source code.
-This notice expresses the author's intended restrictions; enforceability depends on applicable law and the circumstances of use. If this repository is public, GitHub's platform terms may permit certain actions, including viewing and forking public content. Keep the repository private if you need to restrict access to the source code.
+Example response:
 
-## Acknowledgements
-This project applies gradient boosting regression to gas viscosity prediction and integrates the trained model into a web application for accessible inference.
-For scientific or engineering use, validate predictions against independent experimental data and the intended operating conditions.
+```json
+{
+  "viscosity": 0.84261945,
+  "status": "ok"
+}
+```
+
+## Example Usage
+
+```python
+import requests
+
+payload = {
+    "features": [
+        10.5,
+        350.0,
+        85.2,
+        0.032,
+        1350.0,
+        22000.0,
+        410.0,
+        0.12
+    ]
+}
+
+response = requests.post("http://localhost:8081/predict", json=payload)
+print(response.json())
+```
+
+## Notes
+
+- The model assumes that the feature values are passed in the expected order shown above.
+- Missing values are handled by substituting the mean value of the corresponding feature from the training data.
+- The app is intended to be used as a demonstration or deployment prototype rather than a full production system.
+
+## Future Improvements
+
+- Add automated tests
+- Validate input ranges and units
+- Improve model packaging and reproducibility
+- Add Docker support
+- Create a more polished front-end UI
+- Add model versioning and experiment tracking
+
+## License
+
+This project is intended for educational and demonstration purposes. Add a license file if you plan to distribute it publicly.
+
+## Contact
+
+For questions or collaboration opportunities, contact the repository owner through GitHub.
