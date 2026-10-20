@@ -3,7 +3,6 @@ import json
 import numpy as np
 from pathlib import Path
 from flask import Flask, send_file, request, jsonify
-from google.colab import output
 
 # ── CONFIGURATION ──────────────────────────────────────────────
 BASE_DIR   = Path('/content/')
