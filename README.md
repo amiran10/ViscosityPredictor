@@ -204,7 +204,7 @@ print(response.json())
 
 ## License
 
-This project is intended for educational and demonstration purposes. Add a license file if you plan to distribute it publicly.
+This project is intended for educational and demonstration purposes.
 
 ## Contact
 
