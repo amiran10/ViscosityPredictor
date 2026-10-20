@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CH₄/H₂ Viscosity Predictor</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  max-width: 600px;
+  width: 100%;
+  padding: 40px;
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 32px;
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #444;
+  font-size: 14px;
+}
+
+.unit {
+  color: #888;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+input[type="number"],
+select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+input[type="number"]:focus,
+select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.btn-predict {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-predict:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+}
+
+.btn-predict:active {
+  transform: translateY(0);
+}
+
+.btn-predict:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.result {
+  margin-top: 30px;
+  padding: 25px;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-radius: 12px;
+  border-left: 5px solid #667eea;
+  display: none;
+}
+
+.result.show {
+  display: block;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-label {
+  font-size: 13px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.result-value {
+  font-size: 40px;
+  font-weight: 800;
+  color: #667eea;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.result-unit {
+  font-size: 16px;
+  color: #888;
+}
+
+.error {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  color: #c33;
+  font-size: 14px;
+  display: none;
+}
+
+.error.show {
+  display: block;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🧪 CH₄/H₂ Viscosity Predictor</h1>
+  <p class="subtitle" id="subtitle">Loading model info...</p>
+
+  <form id="predForm" onsubmit="predict(event)">
+    
+    <!-- H2 Composition - ONLY 5 VALUES -->
+    <div class="form-group">
+      <label>H₂ Composition (% by mole)</label>
+      <select id="h2" required>
+        <option value="10" selected>10% H₂, 90% CH₄</option>
+        <option value="30">30% H₂, 70% CH₄</option>
+        <option value="50">50% H₂, 50% CH₄</option>
+        <option value="70">70% H₂, 30% CH₄</option>
+        <option value="90">90% H₂, 10% CH₄</option>
+      </select>
+    </div>
+
+    <!-- Pressure - REQUIRED -->
+    <div class="form-group">
+      <label>Pressure <span class="unit">(MPa)</span></label>
+      <input type="number" id="pressure" step="any" placeholder="e.g., 1.0" required>
+      <div class="hint">Typical range: 0.1 – 15 MPa</div>
+    </div>
+
+    <!-- Temperature - REQUIRED -->
+    <div class="form-group">
+      <label>Temperature <span class="unit">(K)</span></label>
+      <input type="number" id="temperature" step="any" placeholder="e.g., 300" required>
+      <div class="hint">Typical range: 200 – 700 K</div>
+    </div>
+
+    <!-- Gas Density - OPTIONAL -->
+    <div class="form-group">
+      <label>Gas Density <span class="unit">(kg/m³)</span></label>
+      <input type="number" id="density" step="any" placeholder="Leave blank for median">
+      <div class="hint" id="hint-density">Median: loading...</div>
+    </div>
+
+    <!-- Thermal Conductivity - OPTIONAL -->
+    <div class="form-group">
+      <label>Thermal Conductivity <span class="unit">(W/m·K)</span></label>
+      <input type="number" id="conductivity" step="any" placeholder="Leave blank for median">
+      <div class="hint" id="hint-conductivity">Median: loading...</div>
+    </div>
+
+    <!-- Heat Capacity - OPTIONAL -->
+    <div class="form-group">
+      <label>Heat Capacity (Cp) <span class="unit">(J/kg·K)</span></label>
+      <input type="number" id="capacity" step="any" placeholder="Leave blank for median">
+      <div class="hint" id="hint-capacity">Median: loading...</div>
+    </div>
+
+    <!-- Enthalpy - OPTIONAL -->
+    <div class="form-group">
+      <label>Enthalpy <span class="unit">(J/kg)</span></label>
+      <input type="number" id="enthalpy" step="any" placeholder="Leave blank for median">
+      <div class="hint" id="hint-enthalpy">Median: loading...</div>
+    </div>
+
+    <!-- Entropy - OPTIONAL -->
+    <div class="form-group">
+      <label>Entropy <span class="unit">(J/kg·K)</span></label>
+      <input type="number" id="entropy" step="any" placeholder="Leave blank for median">
+      <div class="hint" id="hint-entropy">Median: loading...</div>
+    </div>
+
+    <button type="submit" class="btn-predict" id="btnPredict">Predict Viscosity</button>
+  </form>
+
+  <div id="error" class="error"></div>
+
+  <div id="result" class="result">
+    <div class="result-label">Predicted Gas Viscosity</div>
+    <div class="result-value" id="viscosity">—</div>
+    <span class="result-unit">centipoise (cP)</span>
+  </div>
+</div>
+
+<script>
+// ── Load model info on page load ──────────────────────────────
+async function loadInfo() {
+  try {
+    const resp = await fetch('/info');
+    if (!resp.ok) throw new Error('Cannot load model info');
+    
+    const info = await resp.json();
+    
+    // Update subtitle
+    document.getElementById('subtitle').textContent = 
+      `Gradient Boosting Model — ${info.n_estimators} trees, R² = ${info.r2}`;
+    
+    // Update median hints
+    const m = info.medians;
+    document.getElementById('hint-density').textContent       = `Median: ${m.density}`;
+    document.getElementById('hint-conductivity').textContent  = `Median: ${m.conductivity}`;
+    document.getElementById('hint-capacity').textContent      = `Median: ${m.capacity}`;
+    document.getElementById('hint-enthalpy').textContent      = `Median: ${m.enthalpy}`;
+    document.getElementById('hint-entropy').textContent       = `Median: ${m.entropy}`;
+    
+  } catch(err) {
+    document.getElementById('subtitle').textContent = 'Error loading model info';
+    console.error(err);
+  }
+}
+
+// ── Prediction function ───────────────────────────────────────
+async function predict(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('btnPredict');
+  const errorBox = document.getElementById('error');
+  const resultBox = document.getElementById('result');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Predicting…';
+  errorBox.classList.remove('show');
+  
+  try {
+    // Build features array
+    // Order: [Pressure, Temperature, Density, Conductivity, Capacity, Enthalpy, Entropy, H2]
+    const features = [
+      parseFloat(document.getElementById('pressure').value),
+      parseFloat(document.getElementById('temperature').value),
+      document.getElementById('density').value || null,
+      document.getElementById('conductivity').value || null,
+      document.getElementById('capacity').value || null,
+      document.getElementById('enthalpy').value || null,
+      document.getElementById('entropy').value || null,
+      parseFloat(document.getElementById('h2').value)
+    ];
+    
+    const resp = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ features })
+    });
+    
+    const data = await resp.json();
+    
+    if (!resp.ok || data.error) {
+      throw new Error(data.error || 'Prediction failed');
+    }
+    
+    // Show result
+    document.getElementById('viscosity').textContent = data.viscosity.toFixed(6);
+    resultBox.classList.remove('show');  // remove first
+    void resultBox.offsetHeight;          // force reflow
+    resultBox.classList.add('show');      // re-add to trigger animation
+    
+  } catch(err) {
+    errorBox.textContent = '⚠️ ' + err.message;
+    errorBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Predict Viscosity';
+  }
+}
+
+// ── Run on page load ──────────────────────────────────────────
+loadInfo();
+</script>
+
+</body>
+</html>
